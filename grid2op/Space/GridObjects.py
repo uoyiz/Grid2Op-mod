@@ -2435,7 +2435,7 @@ class GridObjects:
             )
 
         for el in cls.gen_type:
-            if not el in ["solar", "wind", "hydro", "thermal", "nuclear"]:
+            if not el in ["solar", "wind", "hydro", "thermal", "nuclear","balance"]:
                 raise InvalidRedispatching("Unknown generator type : {}".format(el))
 
         if np.any(cls.gen_pmin < 0.0):

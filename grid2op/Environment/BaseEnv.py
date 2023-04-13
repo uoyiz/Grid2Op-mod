@@ -1583,10 +1583,10 @@ class BaseEnv(GridObjects, RandomObject, ABC):
         # first i define the participating generators
         # these are the generators that will be adjusted for redispatching
         gen_participating = (
-            (new_p > 0.0)
-            | (self._actual_dispatch != 0.0)
-            | (self._target_dispatch != self._actual_dispatch)
+             (self._actual_dispatch != 0.0)
+            | (self._target_dispatch != self._actual_dispatch)|(self.name_gen== "balance")
         )
+
         gen_participating[~self.gen_redispatchable] = False
         incr_in_chronics = new_p - (
             self._gen_activeprod_t_redisp - self._actual_dispatch
@@ -1796,33 +1796,45 @@ class BaseEnv(GridObjects, RandomObject, ABC):
                 # hess=hess  # not used for SLSQP
             )
             return this_res
-        res = f(x0)
-        if res.success:
-            self._actual_dispatch[gen_participating] += res.x * scale_x
-        else:
-            # check if constraints are "approximately" met
-            mat_const = np.concatenate((mat_sum_0_no_turn_on, mat_pmin_max_ramps))
-            downs = np.concatenate(
-                (const_sum_0_no_turn_on / scale_x, (min_disp - added) / scale_x)
+        #lc
+        res = x0
+        self._actual_dispatch[gen_participating] += res * scale_x
+        self._actual_dispatch[(self.name_gen == "balance")] +=sum(equality_const.lb)*scale_x
+        if(new_p[(self.name_gen == "balance")] + self._actual_dispatch[(self.name_gen == "balance")]>self.gen_pmax[(self.name_gen=="balance")]):
+            except_ = InvalidRedispatching(
+                "overbalance"
             )
-            ups = np.concatenate(
-                (const_sum_0_no_turn_on / scale_x, (max_disp + added) / scale_x)
+        if (new_p[(self.name_gen == "balance")] + self._actual_dispatch[(self.name_gen == "balance")]< self.gen_pmin[(self.name_gen == "balance")]):
+            except_ = InvalidRedispatching(
+                "belowbalance"
             )
-            vals = np.matmul(mat_const, res.x)
-            ok_down = np.all(
-                vals - downs >= -self._tol_poly
-            )  # i don't violate "down" constraints
-            ok_up = np.all(vals - ups <= self._tol_poly)
-            if ok_up and ok_down:
-                # it's ok i can tolerate "small" perturbations
-                self._actual_dispatch[gen_participating] += res.x * scale_x
-            else:
-                # TODO try with another method here, maybe
-                error_dispatch = (
-                    "Redispatching automaton terminated with error (no more information available "
-                    'at this point):\n"{}"'.format(res.message)
-                )
-                except_ = InvalidRedispatching(error_dispatch)
+
+        # if res.success:
+        #     self._actual_dispatch[gen_participating] += res.x * scale_x
+        # else:
+        #     # check if constraints are "approximately" met
+        #     mat_const = np.concatenate((mat_sum_0_no_turn_on, mat_pmin_max_ramps))
+        #     downs = np.concatenate(
+        #         (const_sum_0_no_turn_on / scale_x, (min_disp - added) / scale_x)
+        #     )
+        #     ups = np.concatenate(
+        #         (const_sum_0_no_turn_on / scale_x, (max_disp + added) / scale_x)
+        #     )
+        #     vals = np.matmul(mat_const, res.x)
+        #     ok_down = np.all(
+        #         vals - downs >= -self._tol_poly
+        #     )  # i don't violate "down" constraints
+        #     ok_up = np.all(vals - ups <= self._tol_poly)
+        #     if ok_up and ok_down:
+        #         # it's ok i can tolerate "small" perturbations
+        #         self._actual_dispatch[gen_participating] += res.x * scale_x
+        #     else:
+        #         # TODO try with another method here, maybe
+        #         error_dispatch = (
+        #             "Redispatching automaton terminated with error (no more information available "
+        #             'at this point):\n"{}"'.format(res.message)
+        #         )
+        #         except_ = InvalidRedispatching(error_dispatch)
         return except_
 
     def _detect_infeasible_dispatch(self, incr_in_chronics, avail_down, avail_up):
@@ -2282,7 +2294,7 @@ class BaseEnv(GridObjects, RandomObject, ABC):
             self._env_modification._dict_inj["prod_p"] = 1.0 * new_p
             self._env_modification._modif_inj = True
 
-    def _aux_update_curtailment_act(self, action):
+    def  _aux_update_curtailment_act(self, action):
         curtailment_act = 1.0 * action._curtail
         ind_curtailed_in_act = (curtailment_act != -1.0) & self.gen_renewable
         self._limit_curtailment_prev[:] = self._limit_curtailment

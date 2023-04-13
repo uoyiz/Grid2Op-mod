@@ -9,7 +9,10 @@
 # this files present utilitary class for handling the folder where data are stored mainly
 import os
 import json
-
+# 获取当前脚本的目录
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# 将当前工作目录更改为脚本目录
+os.chdir(script_dir)
 DEFAULT_PATH_CONFIG = os.path.expanduser("~/.grid2opconfig.json")
 DEFAULT_PATH_DATA = os.path.expanduser("~/data_grid2op")
 KEY_DATA_PATH = "data_path"

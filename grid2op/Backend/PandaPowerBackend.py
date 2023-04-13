@@ -481,17 +481,33 @@ class PandaPowerBackend(Backend):
         self.name_line = np.array(self.name_line)
 
         self.n_gen = copy.deepcopy(self._grid.gen.shape[0])
-        if (
-            "name" in self._grid.gen.columns
-            and not self._grid.gen["name"].isnull().values.any()
-        ):
-            self.name_gen = [name_g for name_g in self._grid.gen["name"]]
+        # if (
+        #     "name" in self._grid.gen.columns
+        #     and not self._grid.gen["name"].isnull().values.any()
+        # ):
+        #     self.name_gen = [name_g for name_g in self._grid.gen["name"]]
+        # else:
+        #     self.name_gen = [
+        #         "gen_{bus}_{index_gen}".format(**row, index_gen=i)
+        #         for i, (_, row) in enumerate(self._grid.gen.iterrows())
+        #     ]
+        # self.name_gen = np.array(self.name_gen)
+        #魔改 仅仅将不具有名字的发电机生成新名字
+        if "name" in self._grid.gen.columns:
+            mask = self._grid.gen["name"].isnull()
+            self.name_gen = self._grid.gen["name"].copy()
+            self.name_gen.loc[mask] = [
+                "gen_{bus}_{index_gen}".format(**row, index_gen=i)
+                for i, (_, row) in enumerate(self._grid.gen.loc[mask].iterrows())
+            ]
         else:
             self.name_gen = [
                 "gen_{bus}_{index_gen}".format(**row, index_gen=i)
                 for i, (_, row) in enumerate(self._grid.gen.iterrows())
             ]
         self.name_gen = np.array(self.name_gen)
+        # lc
+
 
         self.n_load = copy.deepcopy(self._grid.load.shape[0])
         if (
