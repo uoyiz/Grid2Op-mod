@@ -1,5 +1,6 @@
 import os
 import sys
+sys.path.insert(0,'..')
 import grid2op
 from grid2op.Agent import DoNothingAgent, BaseAgent
 from tqdm.notebook import tqdm  # for easy progress bar
@@ -8,9 +9,6 @@ import numpy as np
 max_iter = 100  # to make computation much faster we will only consider 100 time steps
 import pdb
 import matplotlib.pyplot as plt
-
-
-
 try:
     from lightsim2grid import LightSimBackend
     bk_cls = LightSimBackend
